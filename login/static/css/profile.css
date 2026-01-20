@@ -1,0 +1,226 @@
+* {
+  box-sizing: border-box;
+  font-family: "Segoe UI", sans-serif;
+}
+
+body {
+  margin: 0;
+  background: #f4f7f4;
+}
+
+/* Topbar */
+.topbar {
+  height: 60px;
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  font-weight: 600;
+}
+
+/* Layout */
+.layout {
+  display: flex;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 220px;
+  background: #eef3ee;
+  padding: 20px;
+  min-height: calc(100vh - 60px);
+}
+
+.menu {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  background: none;
+  text-align: left;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+
+.menu.active {
+  background: #1f2937;
+  color: white;
+}
+
+/* Content */
+.content {
+  flex: 1;
+  padding: 32px;
+}
+
+.subtitle {
+  color: #6b7280;
+  margin-bottom: 24px;
+}
+
+/* Card */
+.profile-card {
+  background: white;
+  padding: 32px;
+  border-radius: 12px;
+  max-width: 900px;
+}
+
+/* Grid */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.field label {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 6px;
+  color: #374151;
+}
+
+.field input, select {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+/* Email */
+.email-box {
+  display: flex;
+  align-items: center;
+}
+
+.email-box input {
+  flex: 1;
+}
+
+.verified {
+  margin-left: 8px;
+  color: #16a34a;
+  font-weight: bold;
+}
+
+/* Phone */
+.phone-box {
+  display: flex;
+  gap: 8px;
+}
+
+.phone-box select {
+  width: 80px;
+}
+
+/* Passwords */
+.passwords input {
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+/* Buttons */
+.actions {
+  margin-top: 24px;
+}
+
+.btn {
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+
+.btn.cancel {
+  background: #e5e7eb;
+}
+
+.btn.primary {
+  background: #374151;
+  color: white;
+  margin-left: 10px;
+}
+
+/* Footer */
+footer {
+  margin-top: 40px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.topbar {
+  height: 64px;
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.nav-links a {
+  text-decoration: none;
+  color: #374151;
+  font-weight: 500;
+}
+
+.profile-wrapper {
+  position: relative;
+}
+
+.profile-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+
+.profile-dropdown {
+  position: absolute;
+  right: 0;
+  top: 48px;
+  width: 220px;
+  background: #f3f4f6;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+  display: none;
+}
+
+.profile-dropdown a {
+  display: block;
+  padding: 12px 16px;
+  text-decoration: none;
+  color: #374151;
+}
+
+.profile-dropdown a:hover {
+  background: #e5e7eb;
+}
+
+.profile-dropdown .logout {
+  color: #dc2626;
+}
+
+.profile-info {
+  padding: 14px 16px;
+  border-bottom: 1px solid #d1d5db;
+}
