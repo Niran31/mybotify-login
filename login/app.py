@@ -12,6 +12,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import jwt
 import os
+DATABASE_URL = os.getenv("postgresql://mybotify_db_user:HYCww4RmBdps1sI7k4ZkqXRwcD6Fc6wN@dpg-d5nl6m1r0fns73fl2vr0-a/mybotify_db")
 import secrets
 from functools import wraps
 from flask import Flask, render_template
@@ -66,15 +67,6 @@ MyBotify Team
         print("❌ OTP email failed:", e)
 
 
-# Database configuration
-# Database configuration
-DB_CONFIG = {
-    "host": "localhost",
-    "port": 5432,
-    "database": "mybotify_db",
-    "user": "postgres",
-    "password": "postgres123"
-}
 
 @app.route("/")
 def home_page():
@@ -116,9 +108,11 @@ def logout():
 
 
 def get_db_connection():
-    """Create database connection"""
     try:
-        conn = psycopg2.connect(**DB_CONFIG)
+        conn = psycopg2.connect(
+            DATABASE_URL,
+            sslmode="require"
+        )
         return conn
     except Exception as e:
         print(f"Database connection error: {e}")
