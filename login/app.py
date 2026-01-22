@@ -377,7 +377,7 @@ def forgot_password_api():
         if user:
             # Generate reset token
             reset_token = secrets.token_urlsafe(32)
-            reset_token_expiry = datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+            reset_token_expiry = datetime.utcnow() + timedelta(hours=1)
             
             cur.execute(
                 "UPDATE users SET reset_token = %s, reset_token_expiry = %s WHERE id = %s",
