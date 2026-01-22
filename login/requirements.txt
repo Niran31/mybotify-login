@@ -6,5 +6,5 @@ bcrypt==4.1.2
 PyJWT==2.8.0
 python-dotenv==1.0.0
 gunicorn
-resend
+sib-api-v3-sdk
 Werkzeug

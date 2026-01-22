@@ -11,7 +11,10 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import jwt
 import os
-import resend
+
+# Brevo (Sendinblue) Email API
+import sib_api_v3_sdk
+from sib_api_v3_sdk.rest import ApiException
 
 # Get DATABASE_URL from environment variable (Render sets this automatically)
 DATABASE_URL = os.environ.get("DATABASE_URL")
@@ -20,8 +23,10 @@ DATABASE_URL = os.environ.get("DATABASE_URL")
 if not DATABASE_URL:
     DATABASE_URL = "postgresql://mybotify_db_user:HYCww4RmBdps1sI7k4ZkqXRwcD6Fc6wN@dpg-d5nl6m1r0fns73fl2vr0-a.oregon-postgres.render.com/mybotify_db"
 
-# Resend API Key (set in Render environment variables)
-resend.api_key = os.environ.get("RESEND_API_KEY", "")
+# Configure Brevo API
+BREVO_API_KEY = os.environ.get("BREVO_API_KEY", "")
+configuration = sib_api_v3_sdk.Configuration()
+configuration.api_key['api-key'] = BREVO_API_KEY
 
 import secrets
 from functools import wraps
@@ -38,22 +43,25 @@ CORS(app)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-change-in-production')
 app.config['JWT_EXPIRATION_HOURS'] = 24
 
-# Email sender (use your verified domain email or onboarding@resend.dev for testing)
-EMAIL_FROM = os.environ.get('EMAIL_FROM', 'onboarding@resend.dev')
+# Email sender configuration
+EMAIL_FROM = os.environ.get('EMAIL_FROM', 'niranjannivash0@gmail.com')
+EMAIL_FROM_NAME = os.environ.get('EMAIL_FROM_NAME', 'MyBotify')
 
 
 def send_otp_email(email, otp):
-    """Send OTP verification email using Resend API"""
+    """Send OTP verification email using Brevo API"""
     try:
-        if not resend.api_key:
-            print(f"⚠️ RESEND_API_KEY not set. OTP for {email}: {otp}")
+        if not BREVO_API_KEY:
+            print(f"⚠️ BREVO_API_KEY not set. OTP for {email}: {otp}")
             return True
         
-        params = {
-            "from": EMAIL_FROM,
-            "to": [email],
-            "subject": "MyBotify Email Verification",
-            "html": f"""
+        api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
+        
+        send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
+            to=[{"email": email}],
+            sender={"name": EMAIL_FROM_NAME, "email": EMAIL_FROM},
+            subject="MyBotify Email Verification",
+            html_content=f"""
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                 <h2 style="color: #667eea;">MyBotify Email Verification</h2>
                 <p>Hello,</p>
@@ -67,11 +75,14 @@ def send_otp_email(email, otp):
                 <p>Thanks,<br>MyBotify Team</p>
             </div>
             """
-        }
+        )
         
-        response = resend.Emails.send(params)
+        response = api_instance.send_transac_email(send_smtp_email)
         print(f"✅ OTP email sent to {email}: {response}")
         return True
+    except ApiException as e:
+        print(f"❌ OTP email failed: {e}")
+        return False
     except Exception as e:
         print(f"❌ OTP email failed: {e}")
         return False
@@ -523,20 +534,22 @@ def verify_otp():
 # Email functions
 
 def send_verification_email(email, token):
-    """Send email verification link using Resend API"""
+    """Send email verification link using Brevo API"""
     try:
         base_url = os.environ.get('BASE_URL', 'https://mybotify-login.onrender.com')
         verification_link = f"{base_url}/verify-email?token={token}"
         
-        if not resend.api_key:
-            print(f"⚠️ RESEND_API_KEY not set. Verification link for {email}: {verification_link}")
+        if not BREVO_API_KEY:
+            print(f"⚠️ BREVO_API_KEY not set. Verification link for {email}: {verification_link}")
             return True
         
-        params = {
-            "from": EMAIL_FROM,
-            "to": [email],
-            "subject": "Verify Your MyBotify Account",
-            "html": f"""
+        api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
+        
+        send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
+            to=[{"email": email}],
+            sender={"name": EMAIL_FROM_NAME, "email": EMAIL_FROM},
+            subject="Verify Your MyBotify Account",
+            html_content=f"""
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                 <h2 style="color: #667eea;">Welcome to MyBotify!</h2>
                 <p>Please click the button below to verify your email address:</p>
@@ -549,30 +562,35 @@ def send_verification_email(email, token):
                 <p>Best regards,<br>MyBotify Team</p>
             </div>
             """
-        }
+        )
         
-        response = resend.Emails.send(params)
+        response = api_instance.send_transac_email(send_smtp_email)
         print(f"✅ Verification email sent to {email}: {response}")
         return True
+    except ApiException as e:
+        print(f"❌ Verification email error: {e}")
+        return False
     except Exception as e:
         print(f"❌ Verification email error: {e}")
         return False
 
 def send_password_reset_email(email, token):
-    """Send password reset link using Resend API"""
+    """Send password reset link using Brevo API"""
     try:
         base_url = os.environ.get('BASE_URL', 'https://mybotify-login.onrender.com')
         reset_link = f"{base_url}/reset-password?token={token}"
         
-        if not resend.api_key:
-            print(f"⚠️ RESEND_API_KEY not set. Reset link for {email}: {reset_link}")
+        if not BREVO_API_KEY:
+            print(f"⚠️ BREVO_API_KEY not set. Reset link for {email}: {reset_link}")
             return True
         
-        params = {
-            "from": EMAIL_FROM,
-            "to": [email],
-            "subject": "Reset Your MyBotify Password",
-            "html": f"""
+        api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
+        
+        send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
+            to=[{"email": email}],
+            sender={"name": EMAIL_FROM_NAME, "email": EMAIL_FROM},
+            subject="Reset Your MyBotify Password",
+            html_content=f"""
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                 <h2 style="color: #667eea;">Reset Your Password</h2>
                 <p>You requested to reset your MyBotify password.</p>
@@ -586,11 +604,14 @@ def send_password_reset_email(email, token):
                 <p>Best regards,<br>MyBotify Team</p>
             </div>
             """
-        }
+        )
         
-        response = resend.Emails.send(params)
+        response = api_instance.send_transac_email(send_smtp_email)
         print(f"✅ Password reset email sent to {email}: {response}")
         return True
+    except ApiException as e:
+        print(f"❌ Password reset email error: {e}")
+        return False
     except Exception as e:
         print(f"❌ Password reset email error: {e}")
         return False
