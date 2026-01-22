@@ -7,11 +7,11 @@ load_dotenv()
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from flask_mail import Mail, Message
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import jwt
 import os
+import resend
 
 # Get DATABASE_URL from environment variable (Render sets this automatically)
 DATABASE_URL = os.environ.get("DATABASE_URL")
@@ -19,6 +19,9 @@ DATABASE_URL = os.environ.get("DATABASE_URL")
 # Fallback for local development if needed
 if not DATABASE_URL:
     DATABASE_URL = "postgresql://mybotify_db_user:HYCww4RmBdps1sI7k4ZkqXRwcD6Fc6wN@dpg-d5nl6m1r0fns73fl2vr0-a.oregon-postgres.render.com/mybotify_db"
+
+# Resend API Key (set in Render environment variables)
+resend.api_key = os.environ.get("RESEND_API_KEY", "")
 
 import secrets
 from functools import wraps
@@ -28,8 +31,6 @@ from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 
 
-
-
 app = Flask(__name__)
 CORS(app)
 
@@ -37,47 +38,42 @@ CORS(app)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-change-in-production')
 app.config['JWT_EXPIRATION_HOURS'] = 24
 
-# Email configuration
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-
-app.config['MAIL_USERNAME'] = 'niranjannivash0@gmail.com'   # 🔴 YOUR REAL GMAIL
-app.config['MAIL_PASSWORD'] = 'ihbo gulv lxpj hmdq'       # 🔴 16-digit APP PASSWORD
-app.config['MAIL_DEFAULT_SENDER'] = 'niranjannivash0@gmail.com'
-
-
-mail = Mail(app)
+# Email sender (use your verified domain email or onboarding@resend.dev for testing)
+EMAIL_FROM = os.environ.get('EMAIL_FROM', 'onboarding@resend.dev')
 
 
 def send_otp_email(email, otp):
+    """Send OTP verification email using Resend API"""
     try:
-        # Check if we should skip email (Render blocks SMTP on free tier)
-        if os.environ.get('SKIP_EMAIL', 'false').lower() == 'true':
-            print(f"📧 Email skipped (SKIP_EMAIL=true). OTP for {email}: {otp}")
+        if not resend.api_key:
+            print(f"⚠️ RESEND_API_KEY not set. OTP for {email}: {otp}")
             return True
         
-        msg = Message(
-            subject="MyBotify Email Verification",
-            recipients=[email],
-            body=f"""
-Hello,
-
-Your MyBotify verification OTP is: {otp}
-
-This OTP is valid for 10 minutes.
-
-If you did not sign up, please ignore this email.
-
-Thanks,
-MyBotify Team
-"""
-        )
-        mail.send(msg)
-        print("✅ OTP email sent to:", email)
+        params = {
+            "from": EMAIL_FROM,
+            "to": [email],
+            "subject": "MyBotify Email Verification",
+            "html": f"""
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h2 style="color: #667eea;">MyBotify Email Verification</h2>
+                <p>Hello,</p>
+                <p>Your MyBotify verification OTP is:</p>
+                <div style="background: #f4f4f4; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
+                    <h1 style="color: #667eea; margin: 0; letter-spacing: 8px;">{otp}</h1>
+                </div>
+                <p>This OTP is valid for <strong>10 minutes</strong>.</p>
+                <p>If you did not sign up, please ignore this email.</p>
+                <br>
+                <p>Thanks,<br>MyBotify Team</p>
+            </div>
+            """
+        }
+        
+        response = resend.Emails.send(params)
+        print(f"✅ OTP email sent to {email}: {response}")
         return True
     except Exception as e:
-        print("❌ OTP email failed:", e)
+        print(f"❌ OTP email failed: {e}")
         return False
 
 
@@ -102,6 +98,10 @@ def signup_page():
 def forgot_password_page():
     return render_template("forgot-password.html")
 
+
+@app.route("/reset-password")
+def reset_password_page():
+    return render_template("reset-password.html")
 
 @app.route("/dashboard")
 def dashboard_page():
@@ -405,6 +405,56 @@ def forgot_password_api():
         print(f"Forgot password error: {e}")
         return jsonify({'message': 'An error occurred'}), 500
 
+
+@app.route('/api/reset-password', methods=['POST'])
+def reset_password_api():
+    """Reset password with token"""
+    try:
+        data = request.get_json()
+        token = data.get('token', '')
+        password = data.get('password', '')
+        
+        if not token or not password:
+            return jsonify({'message': 'Token and password are required'}), 400
+        
+        if len(password) < 6:
+            return jsonify({'message': 'Password must be at least 6 characters'}), 400
+        
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'message': 'Database connection failed'}), 500
+        
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # Find user with valid reset token
+        cur.execute(
+            "SELECT * FROM users WHERE reset_token = %s AND reset_token_expiry > NOW()",
+            (token,)
+        )
+        user = cur.fetchone()
+        
+        if not user:
+            cur.close()
+            conn.close()
+            return jsonify({'message': 'Invalid or expired reset token'}), 400
+        
+        # Update password and clear reset token
+        password_hash = generate_password_hash(password)
+        cur.execute(
+            "UPDATE users SET password_hash = %s, reset_token = NULL, reset_token_expiry = NULL WHERE id = %s",
+            (password_hash, user['id'])
+        )
+        conn.commit()
+        
+        cur.close()
+        conn.close()
+        
+        return jsonify({'message': 'Password reset successful'}), 200
+        
+    except Exception as e:
+        print(f"Reset password error: {e}")
+        return jsonify({'message': 'An error occurred'}), 500
+
 @app.route('/api/verify-token', methods=['POST'])
 @token_required
 def verify_token(current_user_id):
@@ -473,68 +523,76 @@ def verify_otp():
 # Email functions
 
 def send_verification_email(email, token):
-    """Send email verification link"""
+    """Send email verification link using Resend API"""
     try:
-        verification_link = f"http://localhost:5000/verify-email?token={token}"
+        base_url = os.environ.get('BASE_URL', 'https://mybotify-login.onrender.com')
+        verification_link = f"{base_url}/verify-email?token={token}"
         
-        msg = Message(
-            'Verify Your MyBotify Account',
-            recipients=[email]
-        )
-        msg.body = f"""
-        Welcome to MyBotify!
+        if not resend.api_key:
+            print(f"⚠️ RESEND_API_KEY not set. Verification link for {email}: {verification_link}")
+            return True
         
-        Please click the link below to verify your email address:
-        {verification_link}
+        params = {
+            "from": EMAIL_FROM,
+            "to": [email],
+            "subject": "Verify Your MyBotify Account",
+            "html": f"""
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h2 style="color: #667eea;">Welcome to MyBotify!</h2>
+                <p>Please click the button below to verify your email address:</p>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="{verification_link}" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold;">Verify Email</a>
+                </div>
+                <p style="color: #666; font-size: 14px;">This link will expire in 24 hours.</p>
+                <p style="color: #666; font-size: 14px;">If you didn't create an account, please ignore this email.</p>
+                <br>
+                <p>Best regards,<br>MyBotify Team</p>
+            </div>
+            """
+        }
         
-        This link will expire in 24 hours.
-        
-        If you didn't create an account, please ignore this email.
-        
-        Best regards,
-        MyBotify Team
-        """
-        
-        mail.send(msg)
-        print(f"Verification email sent to {email}")
+        response = resend.Emails.send(params)
+        print(f"✅ Verification email sent to {email}: {response}")
+        return True
     except Exception as e:
-        print(f"Email sending error: {e}")
+        print(f"❌ Verification email error: {e}")
+        return False
 
 def send_password_reset_email(email, token):
-    """Send password reset link"""
+    """Send password reset link using Resend API"""
     try:
-        # Use environment variable for base URL, fallback to Render URL
         base_url = os.environ.get('BASE_URL', 'https://mybotify-login.onrender.com')
         reset_link = f"{base_url}/reset-password?token={token}"
         
-        # Check if we should skip email (Render blocks SMTP on free tier)
-        if os.environ.get('SKIP_EMAIL', 'false').lower() == 'true':
-            print(f"📧 Email skipped (SKIP_EMAIL=true). Reset link for {email}: {reset_link}")
+        if not resend.api_key:
+            print(f"⚠️ RESEND_API_KEY not set. Reset link for {email}: {reset_link}")
             return True
         
-        msg = Message(
-            'Reset Your MyBotify Password',
-            recipients=[email]
-        )
-        msg.body = f"""
-        You requested to reset your MyBotify password.
+        params = {
+            "from": EMAIL_FROM,
+            "to": [email],
+            "subject": "Reset Your MyBotify Password",
+            "html": f"""
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h2 style="color: #667eea;">Reset Your Password</h2>
+                <p>You requested to reset your MyBotify password.</p>
+                <p>Click the button below to reset your password:</p>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="{reset_link}" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold;">Reset Password</a>
+                </div>
+                <p style="color: #666; font-size: 14px;">This link will expire in 1 hour.</p>
+                <p style="color: #666; font-size: 14px;">If you didn't request a password reset, please ignore this email.</p>
+                <br>
+                <p>Best regards,<br>MyBotify Team</p>
+            </div>
+            """
+        }
         
-        Please click the link below to reset your password:
-        {reset_link}
-        
-        This link will expire in 1 hour.
-        
-        If you didn't request a password reset, please ignore this email.
-        
-        Best regards,
-        MyBotify Team
-        """
-        
-        mail.send(msg)
-        print(f"✅ Password reset email sent to {email}")
+        response = resend.Emails.send(params)
+        print(f"✅ Password reset email sent to {email}: {response}")
         return True
     except Exception as e:
-        print(f"❌ Email sending error: {e}")
+        print(f"❌ Password reset email error: {e}")
         return False
 
 @app.route('/')
