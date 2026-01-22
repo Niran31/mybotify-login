@@ -12,7 +12,14 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import jwt
 import os
-DATABASE_URL = os.getenv("postgresql://mybotify_db_user:HYCww4RmBdps1sI7k4ZkqXRwcD6Fc6wN@dpg-d5nl6m1r0fns73fl2vr0-a/mybotify_db")
+
+# Get DATABASE_URL from environment variable (Render sets this automatically)
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+# Fallback for local development if needed
+if not DATABASE_URL:
+    DATABASE_URL = "postgresql://mybotify_db_user:HYCww4RmBdps1sI7k4ZkqXRwcD6Fc6wN@dpg-d5nl6m1r0fns73fl2vr0-a.oregon-postgres.render.com/mybotify_db"
+
 import secrets
 from functools import wraps
 from flask import Flask, render_template
@@ -144,6 +151,20 @@ def init_database():
             )
         """)
         
+        # Create pending_users table for OTP verification during signup
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS pending_users (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                email VARCHAR(255) UNIQUE NOT NULL,
+                phone VARCHAR(20),
+                password VARCHAR(255) NOT NULL,
+                otp VARCHAR(6),
+                otp_expiry TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
         conn.commit()
         cur.close()
         conn.close()
@@ -194,7 +215,9 @@ def signup_send_otp():
     phone = data["phone"]
     password = data["password"]
 
-    conn = psycopg2.connect(**DB_CONFIG)
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({"message": "Database connection failed"}), 500
     cur = conn.cursor()
 
     # Check if user already exists
@@ -231,7 +254,9 @@ def signup_verify():
     email = data["email"]
     otp = data["otp"]
 
-    conn = psycopg2.connect(**DB_CONFIG)
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({"message": "Database connection failed"}), 500
     cur = conn.cursor()
 
     cur.execute("""
