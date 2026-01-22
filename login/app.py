@@ -52,6 +52,11 @@ mail = Mail(app)
 
 def send_otp_email(email, otp):
     try:
+        # Check if we should skip email (Render blocks SMTP on free tier)
+        if os.environ.get('SKIP_EMAIL', 'false').lower() == 'true':
+            print(f"📧 Email skipped (SKIP_EMAIL=true). OTP for {email}: {otp}")
+            return True
+        
         msg = Message(
             subject="MyBotify Email Verification",
             recipients=[email],
@@ -70,8 +75,10 @@ MyBotify Team
         )
         mail.send(msg)
         print("✅ OTP email sent to:", email)
+        return True
     except Exception as e:
         print("❌ OTP email failed:", e)
+        return False
 
 
 
@@ -496,7 +503,14 @@ def send_verification_email(email, token):
 def send_password_reset_email(email, token):
     """Send password reset link"""
     try:
-        reset_link = f"http://localhost:5000/reset-password?token={token}"
+        # Use environment variable for base URL, fallback to Render URL
+        base_url = os.environ.get('BASE_URL', 'https://mybotify-login.onrender.com')
+        reset_link = f"{base_url}/reset-password?token={token}"
+        
+        # Check if we should skip email (Render blocks SMTP on free tier)
+        if os.environ.get('SKIP_EMAIL', 'false').lower() == 'true':
+            print(f"📧 Email skipped (SKIP_EMAIL=true). Reset link for {email}: {reset_link}")
+            return True
         
         msg = Message(
             'Reset Your MyBotify Password',
@@ -517,9 +531,11 @@ def send_password_reset_email(email, token):
         """
         
         mail.send(msg)
-        print(f"Password reset email sent to {email}")
+        print(f"✅ Password reset email sent to {email}")
+        return True
     except Exception as e:
-        print(f"Email sending error: {e}")
+        print(f"❌ Email sending error: {e}")
+        return False
 
 @app.route('/')
 def home():
