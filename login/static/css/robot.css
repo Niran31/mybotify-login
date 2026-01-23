@@ -1,6 +1,6 @@
 /* =====================================================
-   MYBOTIFY LOGO ROBOT - Simple Robot Head Design
-   Clean, Modern, Matching Brand Colors
+   MYBOTIFY LOGO ROBOT - Simple Robot Head Icon
+   Curved Antenna, Side Ears, Rectangular Eyes
    ===================================================== */
 
 /* Logo Robot Container */
@@ -14,71 +14,95 @@
     flex-shrink: 0;
 }
 
-/* Robot Head - Rounded Shape */
+/* Robot Head - Main Shape */
 .robot-face {
     position: relative;
-    width: 28px;
-    height: 26px;
+    width: 24px;
+    height: 18px;
     background: #10B981;
-    border-radius: 14px 14px 12px 12px;
+    border-radius: 5px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-top: 6px;
+    margin-top: 8px;
 }
 
-/* Antenna Container */
+/* Side Ears */
+.robot-face::before,
+.robot-face::after {
+    content: '';
+    position: absolute;
+    width: 4px;
+    height: 8px;
+    background: #10B981;
+    border-radius: 2px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.robot-face::before {
+    left: -3px;
+}
+
+.robot-face::after {
+    right: -3px;
+}
+
+/* Antenna - Curved */
 .robot-antenna {
     position: absolute;
-    top: -6px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 8px;
+    top: -10px;
+    right: 4px;
+    width: 10px;
+    height: 10px;
+    border: 2px solid #10B981;
+    border-bottom: none;
+    border-left: none;
+    border-radius: 0 10px 0 0;
 }
 
-/* Antenna Dots */
-.robot-antenna::before,
+/* Antenna Tip */
 .robot-antenna::after {
     content: '';
+    position: absolute;
+    top: -3px;
+    right: -3px;
     width: 5px;
     height: 5px;
     background: #10B981;
     border-radius: 50%;
 }
 
-/* Inner Face Container */
+/* Inner Visor/Face */
 .robot-inner {
-    position: relative;
+    width: 18px;
+    height: 10px;
+    background: #fff;
+    border-radius: 3px;
     display: flex;
-    flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: 3px;
 }
 
-/* Eyes Container */
+/* Eyes Container - Not needed, using robot-inner */
 .robot-eyes {
     display: flex;
-    gap: 4px;
+    gap: 3px;
     align-items: center;
 }
 
-/* Simple Oval Eyes */
+/* Rectangular Eyes */
 .robot-eye {
-    width: 7px;
-    height: 9px;
-    background: #fff;
-    border-radius: 50%;
+    width: 5px;
+    height: 6px;
+    background: #10B981;
+    border-radius: 2px;
 }
 
-/* Simple Curved Smile */
+/* Hide smile - not needed for this design */
 .robot-smile {
-    width: 8px;
-    height: 4px;
-    border: 2px solid #fff;
-    border-top: none;
-    border-radius: 0 0 8px 8px;
-    background: transparent;
+    display: none;
 }
 
 /* =====================================================
@@ -90,7 +114,7 @@
 }
 
 .logo-robot:hover {
-    transform: scale(1.05);
+    transform: scale(1.08);
 }
 
 /* =====================================================
@@ -104,39 +128,56 @@
 }
 
 .logo-robot.medium .robot-face {
-    width: 35px;
-    height: 32px;
-    border-radius: 17px 17px 14px 14px;
-    margin-top: 8px;
+    width: 30px;
+    height: 22px;
+    border-radius: 6px;
+    margin-top: 10px;
+}
+
+.logo-robot.medium .robot-face::before,
+.logo-robot.medium .robot-face::after {
+    width: 5px;
+    height: 10px;
+}
+
+.logo-robot.medium .robot-face::before {
+    left: -4px;
+}
+
+.logo-robot.medium .robot-face::after {
+    right: -4px;
 }
 
 .logo-robot.medium .robot-antenna {
-    top: -7px;
-    gap: 10px;
+    top: -12px;
+    right: 5px;
+    width: 12px;
+    height: 12px;
+    border-width: 3px;
 }
 
-.logo-robot.medium .robot-antenna::before,
 .logo-robot.medium .robot-antenna::after {
     width: 6px;
     height: 6px;
-}
-
-.logo-robot.medium .robot-eyes {
-    gap: 5px;
-}
-
-.logo-robot.medium .robot-eye {
-    width: 9px;
-    height: 11px;
-}
-
-.logo-robot.medium .robot-smile {
-    width: 10px;
-    height: 5px;
+    top: -4px;
+    right: -4px;
 }
 
 .logo-robot.medium .robot-inner {
+    width: 22px;
+    height: 12px;
+    border-radius: 4px;
     gap: 4px;
+}
+
+.logo-robot.medium .robot-eyes {
+    gap: 4px;
+}
+
+.logo-robot.medium .robot-eye {
+    width: 6px;
+    height: 8px;
+    border-radius: 2px;
 }
 
 /* Large - 48px */
@@ -146,40 +187,57 @@
 }
 
 .logo-robot.large .robot-face {
-    width: 42px;
-    height: 38px;
-    border-radius: 20px 20px 16px 16px;
-    margin-top: 10px;
+    width: 36px;
+    height: 26px;
+    border-radius: 7px;
+    margin-top: 12px;
+}
+
+.logo-robot.large .robot-face::before,
+.logo-robot.large .robot-face::after {
+    width: 6px;
+    height: 12px;
+    border-radius: 3px;
+}
+
+.logo-robot.large .robot-face::before {
+    left: -5px;
+}
+
+.logo-robot.large .robot-face::after {
+    right: -5px;
 }
 
 .logo-robot.large .robot-antenna {
-    top: -8px;
-    gap: 12px;
+    top: -14px;
+    right: 6px;
+    width: 14px;
+    height: 14px;
+    border-width: 3px;
 }
 
-.logo-robot.large .robot-antenna::before,
 .logo-robot.large .robot-antenna::after {
     width: 7px;
     height: 7px;
-}
-
-.logo-robot.large .robot-eyes {
-    gap: 6px;
-}
-
-.logo-robot.large .robot-eye {
-    width: 11px;
-    height: 14px;
-}
-
-.logo-robot.large .robot-smile {
-    width: 12px;
-    height: 6px;
-    border-width: 2px;
+    top: -5px;
+    right: -5px;
 }
 
 .logo-robot.large .robot-inner {
+    width: 26px;
+    height: 14px;
+    border-radius: 4px;
     gap: 5px;
+}
+
+.logo-robot.large .robot-eyes {
+    gap: 5px;
+}
+
+.logo-robot.large .robot-eye {
+    width: 7px;
+    height: 9px;
+    border-radius: 3px;
 }
 
 /* =====================================================
@@ -193,38 +251,55 @@
     }
 
     .logo-robot .robot-face {
-        width: 24px;
-        height: 22px;
-        border-radius: 12px 12px 10px 10px;
-        margin-top: 5px;
+        width: 20px;
+        height: 15px;
+        border-radius: 4px;
+        margin-top: 7px;
+    }
+
+    .logo-robot .robot-face::before,
+    .logo-robot .robot-face::after {
+        width: 3px;
+        height: 6px;
+    }
+
+    .logo-robot .robot-face::before {
+        left: -2px;
+    }
+
+    .logo-robot .robot-face::after {
+        right: -2px;
     }
 
     .logo-robot .robot-antenna {
-        top: -5px;
-        gap: 6px;
+        top: -8px;
+        right: 3px;
+        width: 8px;
+        height: 8px;
+        border-width: 2px;
     }
 
-    .logo-robot .robot-antenna::before,
     .logo-robot .robot-antenna::after {
         width: 4px;
         height: 4px;
-    }
-
-    .logo-robot .robot-eye {
-        width: 6px;
-        height: 8px;
-    }
-
-    .logo-robot .robot-eyes {
-        gap: 3px;
-    }
-
-    .logo-robot .robot-smile {
-        width: 6px;
-        height: 3px;
+        top: -2px;
+        right: -2px;
     }
 
     .logo-robot .robot-inner {
+        width: 15px;
+        height: 8px;
+        border-radius: 2px;
         gap: 2px;
+    }
+
+    .logo-robot .robot-eyes {
+        gap: 2px;
+    }
+
+    .logo-robot .robot-eye {
+        width: 4px;
+        height: 5px;
+        border-radius: 1px;
     }
 }
