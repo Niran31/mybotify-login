@@ -803,6 +803,14 @@ body {
     border-top: 10px solid #ffffff;
 }
 
+/* Robot image in signup page - match homepage size */
+.bot-img {
+    width: 100%;
+    max-width: 300px;
+    height: auto;
+    display: block;
+}
+
 /* ==================== DASHBOARD ==================== */
 .dashboard-page {
     background: var(--bg-secondary);
