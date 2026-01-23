@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,6 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
+
 <body>
     <!-- Navigation -->
     <nav class="navbar">
@@ -16,11 +18,8 @@
             <div class="nav-content">
 
                 <a href="{{ url_for('home_page') }}" class="logo">
-                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                        <rect width="32" height="32" rx="8" fill="#10B981"/>
-                        <path d="M16 10L12 14H15V18H17V14H20L16 10Z" fill="white"/>
-                        <rect x="11" y="20" width="10" height="2" rx="1" fill="white"/>
-                    </svg>
+                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="MyBotify"
+                        style="height: 32px; width: auto;">
                     <span class="logo-text">MyBotify.com</span>
                 </a>
 
@@ -70,13 +69,14 @@
                 <div class="hero-text">
                     <h1>Empower Your <span class="highlight">Shopify</span> Store<br>With AI</h1>
                     <p class="hero-description">
-                        Leverage AI to analyze customer behavior and maximize your campaign performance across multiple platforms.
+                        Leverage AI to analyze customer behavior and maximize your campaign performance across multiple
+                        platforms.
                     </p>
-                    
+
                     <div class="chatbot-section">
                         <h3>Hi there,</h3>
                         <p>I can assist you in optimizing your marketing campaigns!</p>
-                        
+
                         <div class="chat-input-wrapper">
                             <input type="text" class="chat-input" placeholder="Feel free to ask me...">
                             <button class="chat-btn">Start</button>
@@ -123,4 +123,5 @@
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
+
 </html>

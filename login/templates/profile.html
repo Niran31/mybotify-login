@@ -1,111 +1,117 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <title>Profile | MyBotify</title>
   <link rel="stylesheet" href="/static/css/profile.css" />
 </head>
+
 <body>
 
-<!-- Top Navbar -->
-<header class="topbar">
-  <div class="logo">MyBotify</div>
-
-  <nav class="nav-links">
-    <a href="#">About us</a>
-    <a href="#">Channel</a>
-    <a href="#">Support</a>
-
-    <div class="profile-wrapper">
-      <button id="profileBtn" class="profile-btn">
-        <img src="/static/images/avatar.png" class="avatar" />
-        <span>Niranjan S</span>
-      </button>
-
-      <div id="profileMenu" class="profile-dropdown">
-        <div class="profile-info">
-          <strong>Niranjan S</strong>
-          <small>niranjannivash0@gmail.com</small>
-        </div>
-
-        <a href="/dashboard">Go to Dashboard</a>
-        <a href="/logout" class="logout">Logout</a>
-      </div>
-    </div>
-  </nav>
-</header>
-
-
-<div class="layout">
-
-  <!-- Main Content -->
-  <main class="content">
-
-    <h1>Profile</h1>
-    <p class="subtitle">
-      Customize your MyBotify experience by effortlessly managing your profile.
-    </p>
-
-    <div class="profile-card">
-
-      <h2>Edit Profile</h2>
-
-      <div class="grid">
-
-        <div class="field">
-          <label>Name</label>
-          <input type="text" value="Niranjan S">
-        </div>
-
-        <div class="field">
-          <label>Organization (Optional)</label>
-          <input type="text" placeholder="Your Organization Name">
-        </div>
-
-        <div class="field">
-          <label>Email</label>
-          <div class="email-box">
-            <input type="email" value="niranjannivash0@gmail.com" readonly>
-            <span class="verified">✔</span>
-          </div>
-        </div>
-
-        <div class="field">
-          <label>Phone Number</label>
-          <div class="phone-box">
-            <select>
-              <option>+91</option>
-            </select>
-            <input type="text" value="9600517474">
-          </div>
-        </div>
-
-      </div>
-
-      <h3>Change Password</h3>
-
-      <div class="passwords">
-        <input type="password" placeholder="Current password">
-        <input type="password" placeholder="New password">
-        <input type="password" placeholder="Re-type new password">
-      </div>
-
-      <div class="actions">
-        <button class="btn cancel">Cancel</button>
-        <button class="btn primary">Update Profile</button>
-      </div>
-
+  <!-- Top Navbar -->
+  <header class="topbar">
+    <div class="logo">
+      <img src="/static/images/logo.png" alt="MyBotify" style="height: 32px; width: auto;">
+      <span style="color: #10B981; font-weight: 600;">MyBotify</span>
     </div>
 
-    <footer>
-      Terms of use &nbsp;|&nbsp; Privacy policy &nbsp;|&nbsp; ©2025 MyBotify.com
-    </footer>
+    <nav class="nav-links">
+      <a href="#">About us</a>
+      <a href="#">Channel</a>
+      <a href="#">Support</a>
 
-  </main>
+      <div class="profile-wrapper">
+        <button id="profileBtn" class="profile-btn">
+          <img src="/static/images/avatar.png" class="avatar" />
+          <span>Niranjan S</span>
+        </button>
 
-</div>
+        <div id="profileMenu" class="profile-dropdown">
+          <div class="profile-info">
+            <strong>Niranjan S</strong>
+            <small>niranjannivash0@gmail.com</small>
+          </div>
+
+          <a href="/dashboard">Go to Dashboard</a>
+          <a href="/logout" class="logout">Logout</a>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+
+  <div class="layout">
+
+    <!-- Main Content -->
+    <main class="content">
+
+      <h1>Profile</h1>
+      <p class="subtitle">
+        Customize your MyBotify experience by effortlessly managing your profile.
+      </p>
+
+      <div class="profile-card">
+
+        <h2>Edit Profile</h2>
+
+        <div class="grid">
+
+          <div class="field">
+            <label>Name</label>
+            <input type="text" value="Niranjan S">
+          </div>
+
+          <div class="field">
+            <label>Organization (Optional)</label>
+            <input type="text" placeholder="Your Organization Name">
+          </div>
+
+          <div class="field">
+            <label>Email</label>
+            <div class="email-box">
+              <input type="email" value="niranjannivash0@gmail.com" readonly>
+              <span class="verified">✔</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Phone Number</label>
+            <div class="phone-box">
+              <select>
+                <option>+91</option>
+              </select>
+              <input type="text" value="9600517474">
+            </div>
+          </div>
+
+        </div>
+
+        <h3>Change Password</h3>
+
+        <div class="passwords">
+          <input type="password" placeholder="Current password">
+          <input type="password" placeholder="New password">
+          <input type="password" placeholder="Re-type new password">
+        </div>
+
+        <div class="actions">
+          <button class="btn cancel">Cancel</button>
+          <button class="btn primary">Update Profile</button>
+        </div>
+
+      </div>
+
+      <footer>
+        Terms of use &nbsp;|&nbsp; Privacy policy &nbsp;|&nbsp; ©2025 MyBotify.com
+      </footer>
+
+    </main>
+
+  </div>
 
 </body>
+
 </html>
 
 
