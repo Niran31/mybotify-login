@@ -283,18 +283,22 @@ export default function Dashboard() {
                                 </button>
                             </div>
 
-                            {loadingAI && <p>🤖 AI is analyzing your store...</p>}
+                            {loadingAI && <p style={{ color: '#a78bfa' }}>🤖 AI is analyzing your store...</p>}
 
                             {/* Mode Badge */}
                             {analysisMode && (
                                 <div className="account-card" style={{
-                                    background: analysisMode === 'predictive' ? '#1e3a5f' : '#1e4d3d',
-                                    marginTop: '1rem'
+                                    background: analysisMode === 'predictive'
+                                        ? 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)'
+                                        : 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+                                    marginTop: '1rem',
+                                    border: 'none',
+                                    boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
                                 }}>
-                                    <strong>
+                                    <strong style={{ fontSize: '1.1rem' }}>
                                         {analysisMode === 'predictive' ? '🔮 Predictive Mode' : '📊 Historical Mode'}
                                     </strong>
-                                    <span style={{ marginLeft: '1rem', opacity: 0.8 }}>
+                                    <span style={{ marginLeft: '1rem', opacity: 0.9 }}>
                                         {analysisMode === 'predictive'
                                             ? '(Products CSV → Market Predictions)'
                                             : '(Orders CSV → Sales Analysis)'}
@@ -304,21 +308,29 @@ export default function Dashboard() {
 
                             {/* Analysis Summary Card */}
                             {analysisSummary && (
-                                <div className="account-card" style={{ marginTop: '1rem' }}>
+                                <div className="account-card" style={{
+                                    marginTop: '1rem',
+                                    background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+                                    border: '1px solid #475569'
+                                }}>
                                     {analysisMode === 'predictive' ? (
                                         <>
-                                            <strong>📦 Analysis Summary</strong>
-                                            <p>Products: {analysisSummary.products_analyzed} |
-                                                Avg Price: ${analysisSummary.avg_price} |
-                                                Tier: {analysisSummary.price_tier} |
-                                                Category: {analysisSummary.dominant_category}</p>
+                                            <strong style={{ color: '#c4b5fd' }}>📦 Analysis Summary</strong>
+                                            <p style={{ color: '#e2e8f0', marginTop: '0.5rem' }}>
+                                                Products: <span style={{ color: '#a78bfa' }}>{analysisSummary.products_analyzed}</span> |
+                                                Avg Price: <span style={{ color: '#34d399' }}>${analysisSummary.avg_price}</span> |
+                                                Tier: <span style={{ color: '#fbbf24' }}>{analysisSummary.price_tier}</span> |
+                                                Category: <span style={{ color: '#60a5fa' }}>{analysisSummary.dominant_category}</span>
+                                            </p>
                                         </>
                                     ) : (
                                         <>
-                                            <strong>📈 Sales Summary</strong>
-                                            <p>Revenue: ${analysisSummary.total_revenue?.toLocaleString()} |
-                                                States: {analysisSummary.states_analyzed} |
-                                                Orders: {analysisSummary.orders_analyzed}</p>
+                                            <strong style={{ color: '#6ee7b7' }}>📈 Sales Summary</strong>
+                                            <p style={{ color: '#e2e8f0', marginTop: '0.5rem' }}>
+                                                Revenue: <span style={{ color: '#34d399' }}>${analysisSummary.total_revenue?.toLocaleString()}</span> |
+                                                States: <span style={{ color: '#60a5fa' }}>{analysisSummary.states_analyzed}</span> |
+                                                Orders: <span style={{ color: '#fbbf24' }}>{analysisSummary.orders_analyzed}</span>
+                                            </p>
                                         </>
                                     )}
                                 </div>
@@ -326,21 +338,38 @@ export default function Dashboard() {
 
                             {/* Top/Predicted States */}
                             {topStates.length > 0 && (
-                                <div style={{ marginTop: '1rem' }}>
-                                    <h3>{analysisMode === 'predictive' ? '🎯 Predicted High-Potential States' : '🔥 Top Performing States'}</h3>
-                                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                <div style={{ marginTop: '1.5rem' }}>
+                                    <h3 style={{ color: '#f1f5f9', marginBottom: '1rem' }}>
+                                        {analysisMode === 'predictive' ? '🎯 Predicted High-Potential States' : '🔥 Top Performing States'}
+                                    </h3>
+                                    <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
                                         {topStates.map((state, idx) => (
-                                            <div key={state} className="account-card" style={{
-                                                display: 'inline-block',
-                                                padding: '0.5rem 1rem',
-                                                background: idx === 0 ? '#2563eb' : idx < 3 ? '#1e40af' : '#1e3a8a'
+                                            <div key={state} style={{
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                padding: '0.6rem 1.2rem',
+                                                borderRadius: '12px',
+                                                background: idx === 0
+                                                    ? 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)'
+                                                    : idx === 1
+                                                        ? 'linear-gradient(135deg, #9ca3af 0%, #d1d5db 100%)'
+                                                        : idx === 2
+                                                            ? 'linear-gradient(135deg, #b45309 0%, #d97706 100%)'
+                                                            : 'linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)',
+                                                color: idx < 3 ? '#1e293b' : '#fff',
+                                                fontWeight: '600',
+                                                boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
                                             }}>
-                                                <span style={{ marginRight: '0.5rem' }}>
-                                                    {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '•'}
+                                                <span style={{ marginRight: '0.5rem', fontSize: '1.1rem' }}>
+                                                    {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '📍'}
                                                 </span>
                                                 {state}
                                                 {analysisMode === 'predictive' && stateScores[state] && (
-                                                    <span style={{ marginLeft: '0.5rem', opacity: 0.7 }}>
+                                                    <span style={{
+                                                        marginLeft: '0.5rem',
+                                                        opacity: 0.8,
+                                                        fontSize: '0.85rem'
+                                                    }}>
                                                         ({stateScores[state]} pts)
                                                     </span>
                                                 )}
@@ -353,13 +382,22 @@ export default function Dashboard() {
                             {/* Sales Chart (Historical Mode Only) */}
                             {analysisMode === 'historical' && salesData.length > 0 && (
                                 <div style={{ width: "100%", height: 300, marginTop: '1.5rem' }}>
-                                    <h3>📊 Revenue by State</h3>
+                                    <h3 style={{ color: '#f1f5f9', marginBottom: '1rem' }}>📊 Revenue by State</h3>
                                     <ResponsiveContainer>
                                         <BarChart data={salesData}>
-                                            <XAxis dataKey="state" />
-                                            <YAxis />
-                                            <Tooltip formatter={(value) => `$${value.toLocaleString()}`} />
-                                            <Bar dataKey="revenue" fill="#3b82f6" />
+                                            <XAxis dataKey="state" stroke="#94a3b8" />
+                                            <YAxis stroke="#94a3b8" />
+                                            <Tooltip
+                                                formatter={(value) => `$${value.toLocaleString()}`}
+                                                contentStyle={{ background: '#1e293b', border: '1px solid #475569', borderRadius: '8px' }}
+                                            />
+                                            <Bar dataKey="revenue" fill="url(#colorGradient)" radius={[4, 4, 0, 0]} />
+                                            <defs>
+                                                <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="0%" stopColor="#34d399" />
+                                                    <stop offset="100%" stopColor="#059669" />
+                                                </linearGradient>
+                                            </defs>
                                         </BarChart>
                                     </ResponsiveContainer>
                                 </div>
@@ -368,10 +406,22 @@ export default function Dashboard() {
                             {/* AI Suggestions */}
                             {aiSuggestions.length > 0 && (
                                 <div style={{ marginTop: '1.5rem' }}>
-                                    <h3>🤖 AI Campaign Suggestions</h3>
+                                    <h3 style={{ color: '#f1f5f9', marginBottom: '1rem' }}>🤖 AI Campaign Suggestions</h3>
                                     {aiSuggestions.map((text, i) => (
-                                        <div key={i} className="account-card" style={{ marginBottom: '0.5rem' }}>
-                                            {text}
+                                        <div key={i} className="account-card" style={{
+                                            marginBottom: '0.75rem',
+                                            background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+                                            borderLeft: '4px solid',
+                                            borderImage: i === 0
+                                                ? 'linear-gradient(to bottom, #f59e0b, #fbbf24) 1'
+                                                : i === 1
+                                                    ? 'linear-gradient(to bottom, #a855f7, #7c3aed) 1'
+                                                    : i === 2
+                                                        ? 'linear-gradient(to bottom, #34d399, #059669) 1'
+                                                        : 'linear-gradient(to bottom, #60a5fa, #3b82f6) 1',
+                                            padding: '1rem 1.25rem'
+                                        }}>
+                                            <span style={{ color: '#e2e8f0' }}>{text}</span>
                                         </div>
                                     ))}
                                 </div>
