@@ -30,7 +30,7 @@ configuration.api_key['api-key'] = BREVO_API_KEY
 
 import secrets
 from functools import wraps
-from flask import Flask, render_template
+from flask import Flask
 import random
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -88,48 +88,13 @@ def send_otp_email(email, otp):
         return False
 
 
+# API-only mode - React handles the frontend
+# Remove all template routes since we're using React now
 
 @app.route("/")
-def home_page():
-    return render_template("index.html")
-
-
-@app.route("/login")
-def login_page():
-    return render_template("login.html")
-
-
-@app.route("/signup")
-def signup_page():
-    return render_template("signup.html")
-
-
-
-@app.route("/forgot-password")
-def forgot_password_page():
-    return render_template("forgot-password.html")
-
-
-@app.route("/reset-password")
-def reset_password_page():
-    return render_template("reset-password.html")
-
-@app.route("/dashboard")
-def dashboard_page():
-    return render_template("dashboard.html")
-
-@app.route("/profile")
-def profile_page():
-    return render_template("profile.html")
-
-
-@app.route("/logout")
-def logout():
-    """Logout user and redirect to home page"""
-    # Clear any session data if you're using sessions
-    # For now, just redirect to home page
-    # The frontend should also clear the JWT token from localStorage
-    return render_template("index.html")
+def api_health():
+    """Health check endpoint"""
+    return jsonify({'message': 'MyBotify API is running', 'version': '1.0'}), 200
 
 
 def get_db_connection():
@@ -616,10 +581,7 @@ def send_password_reset_email(email, token):
         print(f"❌ Password reset email error: {e}")
         return False
 
-@app.route('/')
-def home():
-    """Health check endpoint"""
-    return jsonify({'message': 'MyBotify API is running', 'version': '1.0'}), 200
+# Duplicate route removed - using api_health() above
 
 if __name__ == '__main__':
     # Initialize database on startup
