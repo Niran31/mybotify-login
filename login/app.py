@@ -11,6 +11,8 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import jwt
 import os
+import pandas as pd
+
 
 # Brevo (Sendinblue) Email API
 import sib_api_v3_sdk
@@ -87,6 +89,7 @@ def send_otp_email(email, otp):
     except Exception as e:
         print(f"❌ OTP email failed: {e}")
         return False
+
 
 
 # Serve React App - Flask serves the React build for production
@@ -502,6 +505,437 @@ def verify_otp():
     conn.close()
 
     return jsonify({"message": "Email verified successfully"}), 200
+
+
+@app.route("/ai/upload-csv", methods=["POST"])
+def upload_csv():
+    if "file" not in request.files:
+        return jsonify({"error": "No file uploaded"}), 400
+
+    file = request.files["file"]
+
+    if file.filename == "":
+        return jsonify({"error": "Empty filename"}), 400
+
+    file_path = os.path.join(UPLOAD_FOLDER, file.filename)
+    file.save(file_path)
+
+    return jsonify({
+        "status": "success",
+        "filename": file.filename
+    })
+
+
+# ============================================================
+# AI ANALYSIS MODULE - DUAL MODE (PREDICTIVE + HISTORICAL)
+# ============================================================
+# This module supports TWO AI modes based on CSV type:
+# 1. Products CSV → Predictive Location Suggestions
+# 2. Orders CSV → Historical Sales Analysis
+# ============================================================
+
+
+def detect_csv_type(columns):
+    """
+    Detect whether the uploaded CSV is a Products export or Orders export.
+    Returns: "products" or "orders"
+    
+    Products CSV indicators: Title, Handle, Vendor, Product Category, Tags
+    Orders CSV indicators: Billing Country, Billing Province, Total, Subtotal
+    """
+    columns_lower = [col.lower() for col in columns]
+    
+    # Orders CSV indicators (these columns are specific to order exports)
+    order_indicators = ['billing country', 'billing province', 'shipping country', 
+                        'subtotal', 'total', 'order id', 'order name']
+    order_score = sum(1 for ind in order_indicators if any(ind in col for col in columns_lower))
+    
+    # Products CSV indicators
+    product_indicators = ['handle', 'vendor', 'product category', 'tags', 
+                          'variant price', 'variant sku', 'body (html)']
+    product_score = sum(1 for ind in product_indicators if any(ind in col for col in columns_lower))
+    
+    print(f"📊 CSV Detection - Orders score: {order_score}, Products score: {product_score}")
+    
+    # If has order-specific columns, it's an orders CSV
+    if order_score >= 2:
+        return "orders"
+    # Otherwise treat as products CSV
+    return "products"
+
+
+def get_price_tier(price):
+    """Classify product into price tier for targeting."""
+    if price >= 200:
+        return "luxury"
+    elif price >= 50:
+        return "premium"
+    elif price >= 20:
+        return "mid-range"
+    else:
+        return "budget"
+
+
+def predict_states_for_category(category, price_tier, keywords):
+    """
+    Rule-based prediction of high-potential US states based on product attributes.
+    This uses market research heuristics (simplified for MVP).
+    
+    Returns: dict with state -> score
+    """
+    # Base state potential scores (population + purchasing power)
+    state_base_scores = {
+        "California": 95, "Texas": 90, "New York": 88, "Florida": 85,
+        "Illinois": 75, "Pennsylvania": 72, "Ohio": 70, "Georgia": 68,
+        "North Carolina": 65, "Michigan": 62, "New Jersey": 78,
+        "Virginia": 70, "Washington": 75, "Arizona": 65, "Massachusetts": 80,
+        "Tennessee": 60, "Indiana": 55, "Missouri": 55, "Maryland": 72,
+        "Wisconsin": 55, "Colorado": 70, "Minnesota": 65, "South Carolina": 58,
+        "Alabama": 50, "Louisiana": 52, "Kentucky": 50, "Oregon": 65,
+        "Oklahoma": 48, "Connecticut": 75, "Utah": 60, "Iowa": 48,
+        "Nevada": 62, "Arkansas": 45, "Mississippi": 42, "Kansas": 48,
+        "New Mexico": 50, "Nebraska": 48, "Idaho": 52, "West Virginia": 42,
+        "Hawaii": 65, "New Hampshire": 68, "Maine": 55, "Montana": 48,
+        "Rhode Island": 65, "Delaware": 68, "South Dakota": 45,
+        "North Dakota": 48, "Alaska": 55, "Vermont": 58, "Wyoming": 45
+    }
+    
+    scores = state_base_scores.copy()
+    category_lower = category.lower() if category else ""
+    keywords_lower = [k.lower() for k in keywords] if keywords else []
+    all_text = category_lower + " " + " ".join(keywords_lower)
+    
+    # ========================================
+    # CATEGORY-BASED ADJUSTMENTS
+    # ========================================
+    
+    # Tech/Electronics → High in tech hubs
+    if any(term in all_text for term in ['tech', 'electronic', 'gadget', 'computer', 'phone']):
+        for state in ['California', 'Washington', 'Texas', 'Massachusetts', 'New York']:
+            scores[state] = scores.get(state, 50) + 15
+    
+    # Fashion/Luxury → High in wealthy urban areas
+    if any(term in all_text for term in ['fashion', 'luxury', 'designer', 'premium', 'jewelry']):
+        for state in ['New York', 'California', 'Florida', 'New Jersey', 'Connecticut']:
+            scores[state] = scores.get(state, 50) + 15
+    
+    # Outdoor/Sports → High in outdoor-friendly states
+    if any(term in all_text for term in ['outdoor', 'camping', 'hiking', 'sport', 'fitness']):
+        for state in ['Colorado', 'Oregon', 'Washington', 'Utah', 'Montana', 'California']:
+            scores[state] = scores.get(state, 50) + 15
+    
+    # Home & Garden → Suburban areas
+    if any(term in all_text for term in ['home', 'garden', 'furniture', 'decor', 'kitchen']):
+        for state in ['Texas', 'Florida', 'Arizona', 'Georgia', 'North Carolina']:
+            scores[state] = scores.get(state, 50) + 12
+    
+    # Baby/Kids products → Family-friendly states
+    if any(term in all_text for term in ['baby', 'kid', 'child', 'toy', 'infant', 'toddler']):
+        for state in ['Texas', 'Utah', 'Arizona', 'Georgia', 'Florida', 'North Carolina']:
+            scores[state] = scores.get(state, 50) + 15
+    
+    # Winter/Cold weather → Northern states
+    if any(term in all_text for term in ['winter', 'cold', 'snow', 'fleece', 'warm']):
+        for state in ['Minnesota', 'Wisconsin', 'Michigan', 'New York', 'Massachusetts', 'Colorado']:
+            scores[state] = scores.get(state, 50) + 12
+    
+    # Beach/Summer → Coastal/warm states
+    if any(term in all_text for term in ['beach', 'summer', 'swim', 'sun', 'tropical']):
+        for state in ['Florida', 'California', 'Hawaii', 'Texas', 'South Carolina']:
+            scores[state] = scores.get(state, 50) + 15
+    
+    # ========================================
+    # PRICE TIER ADJUSTMENTS
+    # ========================================
+    
+    if price_tier == "luxury":
+        # Boost high-income states for luxury products
+        for state in ['New York', 'California', 'Connecticut', 'Massachusetts', 'New Jersey']:
+            scores[state] = scores.get(state, 50) + 10
+    elif price_tier == "budget":
+        # Boost value-conscious states
+        for state in ['Texas', 'Ohio', 'Michigan', 'Pennsylvania', 'Georgia']:
+            scores[state] = scores.get(state, 50) + 8
+    
+    return scores
+
+
+def analyze_products_predictive(df, columns):
+    """
+    Analyze Products CSV and predict high-potential US states.
+    Uses product attributes to make market predictions.
+    """
+    # Find relevant columns
+    title_col = next((c for c in columns if c.lower() in ['title', 'product title', 'name']), None)
+    price_col = next((c for c in columns if 'price' in c.lower()), None)
+    category_col = next((c for c in columns if 'category' in c.lower() or 'type' in c.lower()), None)
+    vendor_col = next((c for c in columns if c.lower() == 'vendor'), None)
+    tags_col = next((c for c in columns if c.lower() == 'tags'), None)
+    
+    print(f"📦 Product columns: title={title_col}, price={price_col}, category={category_col}")
+    
+    # Extract product data
+    products_analyzed = len(df)
+    
+    # Get price statistics
+    avg_price = 0
+    price_tier = "mid-range"
+    if price_col:
+        df[price_col] = pd.to_numeric(
+            df[price_col].astype(str).str.replace(r'[$,]', '', regex=True),
+            errors='coerce'
+        ).fillna(0)
+        avg_price = df[price_col].mean()
+        price_tier = get_price_tier(avg_price)
+    
+    # Get dominant category
+    dominant_category = "General"
+    if category_col:
+        category_counts = df[category_col].value_counts()
+        if len(category_counts) > 0:
+            dominant_category = str(category_counts.index[0])
+    
+    # Collect keywords from titles and tags
+    keywords = []
+    if title_col:
+        keywords.extend(df[title_col].dropna().astype(str).str.lower().tolist())
+    if tags_col:
+        tags_text = df[tags_col].dropna().astype(str).str.lower().str.cat(sep=' ')
+        keywords.extend(tags_text.split(','))
+    
+    # Get state predictions
+    state_scores = predict_states_for_category(dominant_category, price_tier, keywords)
+    
+    # Sort and get top states
+    sorted_states = sorted(state_scores.items(), key=lambda x: x[1], reverse=True)
+    top_states = [state for state, score in sorted_states[:5]]
+    
+    # ========================================
+    # Generate AI Suggestions (Predictive)
+    # ========================================
+    suggestions = []
+    
+    # Main prediction insight
+    suggestions.append(
+        f"🎯 Based on your {products_analyzed} products (avg ${avg_price:.2f}, {price_tier} tier), "
+        f"we predict strong market potential in: {', '.join(top_states[:3])}."
+    )
+    
+    # Category-based insight
+    if dominant_category != "General":
+        suggestions.append(
+            f"📦 Your dominant category '{dominant_category}' performs well in {top_states[0]} and {top_states[1]}. "
+            f"Consider geo-targeted ads for these regions."
+        )
+    
+    # Price-tier insight
+    if price_tier == "luxury":
+        suggestions.append(
+            "💎 Your luxury price point ($200+) suggests targeting high-income areas: "
+            "NYC metro, San Francisco Bay Area, and South Florida."
+        )
+    elif price_tier == "premium":
+        suggestions.append(
+            "⭐ Your premium pricing ($50-200) appeals to suburban professionals. "
+            "Focus on states with strong middle-class markets."
+        )
+    elif price_tier == "budget":
+        suggestions.append(
+            "💰 Your value-oriented pricing (<$20) works well for volume-based campaigns. "
+            "Consider broad targeting in high-population states."
+        )
+    
+    # Actionable campaign suggestion
+    suggestions.append(
+        f"🚀 Recommended action: Launch test campaigns in {top_states[0]} first, "
+        f"then expand to {top_states[1]} and {top_states[2]} based on performance."
+    )
+    
+    return {
+        "mode": "predictive",
+        "predicted_states": top_states,
+        "state_scores": {state: score for state, score in sorted_states[:10]},
+        "ai_suggestions": suggestions,
+        "analysis_summary": {
+            "products_analyzed": products_analyzed,
+            "avg_price": round(avg_price, 2),
+            "price_tier": price_tier,
+            "dominant_category": dominant_category
+        }
+    }
+
+
+def analyze_orders_historical(df, columns):
+    """
+    Analyze Orders CSV with historical sales data.
+    This is the existing functionality, now properly encapsulated.
+    """
+    # Find required columns
+    country_col = next((c for c in columns if c.lower() in 
+                        ['country', 'billing country', 'shipping country']), None)
+    state_col = next((c for c in columns if c.lower() in 
+                      ['state', 'billing province', 'shipping province', 'province', 'region']), None)
+    sales_col = next((c for c in columns if c.lower() in 
+                      ['total', 'subtotal', 'revenue', 'amount', 'order total']), None)
+    product_col = next((c for c in columns if c.lower() in 
+                        ['product', 'title', 'lineitem name', 'item']), None)
+    
+    # Validate required columns
+    missing = []
+    if not country_col:
+        missing.append("Country (e.g., 'Billing Country')")
+    if not state_col:
+        missing.append("State (e.g., 'Billing Province')")
+    if not sales_col:
+        missing.append("Sales (e.g., 'Total', 'Subtotal')")
+    
+    if missing:
+        return {
+            "error": f"Missing required columns: {', '.join(missing)}",
+            "found_columns": columns,
+            "tip": "Please ensure your Orders CSV has Country, State, and Total/Subtotal columns."
+        }
+    
+    print(f"📊 Orders columns: country={country_col}, state={state_col}, sales={sales_col}")
+    
+    # Clean sales data
+    df[sales_col] = pd.to_numeric(
+        df[sales_col].astype(str).str.replace(r'[$,]', '', regex=True),
+        errors='coerce'
+    ).fillna(0)
+    
+    # Filter USA only
+    usa_variations = ['United States', 'US', 'USA', 'united states']
+    usa_df = df[df[country_col].astype(str).str.strip().isin(usa_variations)]
+    
+    if len(usa_df) == 0:
+        return {
+            "error": "No US data found in the CSV",
+            "tip": "Make sure your CSV contains orders from the United States."
+        }
+    
+    # Aggregate by state
+    state_sales = (
+        usa_df.groupby(state_col)[sales_col]
+        .sum()
+        .sort_values(ascending=False)
+    )
+    state_sales = state_sales[state_sales.index.astype(str).str.strip() != '']
+    
+    # Get top products per state
+    top_products = {}
+    if product_col:
+        for state in state_sales.head(5).index:
+            state_data = usa_df[usa_df[state_col] == state]
+            if len(state_data) > 0:
+                top_product = state_data.groupby(product_col)[sales_col].sum().idxmax()
+                top_products[state] = top_product
+    
+    # ========================================
+    # Generate AI Suggestions (Historical)
+    # ========================================
+    suggestions = []
+    total_revenue = float(state_sales.sum())
+    
+    for state, revenue in state_sales.head(5).items():
+        pct = (revenue / total_revenue * 100) if total_revenue > 0 else 0
+        
+        if revenue > 5000:
+            suggestions.append(
+                f"🔥 {state} is a top performer (${revenue:,.0f}, {pct:.1f}% of sales). "
+                f"Scale your ad campaigns here!"
+            )
+        elif revenue > 2000:
+            suggestions.append(
+                f"📈 {state} shows strong potential (${revenue:,.0f}). "
+                f"Consider increasing ad spend to boost growth."
+            )
+        else:
+            suggestions.append(
+                f"🧪 {state} has room to grow (${revenue:,.0f}). "
+                f"Test targeted campaigns to expand this market."
+            )
+    
+    # Add product-specific suggestions
+    if top_products:
+        for state, product in list(top_products.items())[:2]:
+            suggestions.append(
+                f"🎯 '{product}' is your best seller in {state}. Feature it in regional ads!"
+            )
+    
+    return {
+        "mode": "historical",
+        "top_states": list(state_sales.head(5).index),
+        "low_states": list(state_sales.tail(3).index),
+        "sales_by_state": state_sales.to_dict(),
+        "top_products_per_state": top_products,
+        "ai_suggestions": suggestions,
+        "total_us_revenue": total_revenue,
+        "states_analyzed": len(state_sales),
+        "orders_analyzed": len(usa_df)
+    }
+
+
+@app.route("/ai/analyze", methods=["POST"])
+def analyze_csv():
+    """
+    Unified AI Analysis Endpoint
+    
+    Automatically detects CSV type and routes to appropriate analysis:
+    - Products CSV → Predictive mode (suggests high-potential states)
+    - Orders CSV → Historical mode (analyzes actual sales data)
+    """
+    data = request.json
+    filename = data.get("filename")
+
+    if not filename:
+        return jsonify({"error": "Filename is required"}), 400
+
+    file_path = os.path.join(UPLOAD_FOLDER, filename)
+
+    if not os.path.exists(file_path):
+        return jsonify({"error": "File not found"}), 404
+
+    try:
+        df = pd.read_csv(file_path)
+        columns = df.columns.tolist()
+        print(f"📊 CSV Columns: {columns}")
+        
+        # ========================================
+        # AUTO-DETECT CSV TYPE
+        # ========================================
+        csv_type = detect_csv_type(columns)
+        print(f"🔍 Detected CSV type: {csv_type.upper()}")
+        
+        # ========================================
+        # ROUTE TO APPROPRIATE ANALYSIS
+        # ========================================
+        if csv_type == "products":
+            result = analyze_products_predictive(df, columns)
+        else:
+            result = analyze_orders_historical(df, columns)
+        
+        # Check for errors from analysis functions
+        if "error" in result:
+            return jsonify(result), 400
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"❌ Analysis error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"Analysis failed: {str(e)}"}), 500
+
+
+
+
+
+
+UPLOAD_FOLDER = "uploads"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+
 
 
 # Email functions

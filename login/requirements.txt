@@ -8,3 +8,6 @@ python-dotenv==1.0.0
 gunicorn
 sib-api-v3-sdk
 Werkzeug
+pandas
+python-multipart
+pandas

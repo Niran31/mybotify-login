@@ -2,6 +2,16 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Logo from '../components/Logo';
+import {
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    Tooltip,
+    ResponsiveContainer
+} from 'recharts';
+
+
 
 export default function Dashboard() {
     const { user, logout } = useAuth();
@@ -9,6 +19,18 @@ export default function Dashboard() {
     const [activeSection, setActiveSection] = useState('account-home');
     const [showUserDropdown, setShowUserDropdown] = useState(false);
     const [showMobileMenu, setShowMobileMenu] = useState(false);
+    const [csvFile, setCsvFile] = useState(null);
+    const [loadingAI, setLoadingAI] = useState(false);
+
+    // AI Analysis Results - Dual Mode Support
+    const [analysisMode, setAnalysisMode] = useState(null); // "predictive" or "historical"
+    const [salesData, setSalesData] = useState([]);          // For historical mode (chart)
+    const [topStates, setTopStates] = useState([]);          // Top/Predicted states
+    const [stateScores, setStateScores] = useState({});      // For predictive mode scores
+    const [aiSuggestions, setAiSuggestions] = useState([]);  // AI campaign suggestions
+    const [analysisSummary, setAnalysisSummary] = useState(null); // Summary stats
+
+
 
     const handleLogout = () => {
         logout();
@@ -18,6 +40,95 @@ export default function Dashboard() {
     const handleSectionChange = (section) => {
         setActiveSection(section);
     };
+
+    const handleAnalyzeStore = async () => {
+        if (!csvFile) {
+            alert("Please upload Shopify CSV file");
+            return;
+        }
+
+        setLoadingAI(true);
+        // Reset all previous results
+        setAnalysisMode(null);
+        setSalesData([]);
+        setTopStates([]);
+        setStateScores({});
+        setAiSuggestions([]);
+        setAnalysisSummary(null);
+
+        const formData = new FormData();
+        formData.append("file", csvFile);
+
+        try {
+            // Upload CSV
+            const uploadRes = await fetch("http://localhost:5000/ai/upload-csv", {
+                method: "POST",
+                body: formData
+            });
+
+            const uploadData = await uploadRes.json();
+
+            if (uploadData.error) {
+                alert("Upload failed: " + uploadData.error);
+                setLoadingAI(false);
+                return;
+            }
+
+            // Analyze CSV (auto-detects Products vs Orders)
+            const analyzeRes = await fetch("http://localhost:5000/ai/analyze", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ filename: uploadData.filename })
+            });
+
+            const result = await analyzeRes.json();
+
+            // Check for errors from the API
+            if (result.error) {
+                let errorMsg = result.error;
+                if (result.tip) {
+                    errorMsg += "\n\n💡 Tip: " + result.tip;
+                }
+                alert(errorMsg);
+                setLoadingAI(false);
+                return;
+            }
+
+            // Set the analysis mode
+            setAnalysisMode(result.mode);
+            setAiSuggestions(result.ai_suggestions || []);
+
+            if (result.mode === "predictive") {
+                // Predictive mode (Products CSV)
+                setTopStates(result.predicted_states || []);
+                setStateScores(result.state_scores || {});
+                setAnalysisSummary(result.analysis_summary || null);
+            } else {
+                // Historical mode (Orders CSV)
+                setTopStates(result.top_states || []);
+                // Build chart data from sales_by_state
+                if (result.sales_by_state) {
+                    const chartData = Object.entries(result.sales_by_state).map(([state, revenue]) => ({
+                        state,
+                        revenue
+                    }));
+                    setSalesData(chartData);
+                }
+                setAnalysisSummary({
+                    total_revenue: result.total_us_revenue,
+                    states_analyzed: result.states_analyzed,
+                    orders_analyzed: result.orders_analyzed
+                });
+            }
+
+        } catch (err) {
+            alert("AI analysis failed: " + err.message);
+            console.error(err);
+        }
+
+        setLoadingAI(false);
+    };
+
 
     return (
         <div className="dashboard-page">
@@ -158,15 +269,116 @@ export default function Dashboard() {
                         <section className="dashboard-section active" id="online-stores">
                             <div className="section-header">
                                 <h2>Online Stores</h2>
-                                <p>Manage and connect your Shopify & other online stores.</p>
+                                <p>Upload your Shopify data and get AI-powered insights.</p>
                             </div>
 
-                            <div className="empty-state">
-                                <p>No stores connected yet.</p>
-                                <button className="btn btn-primary">+ Add Store</button>
+                            <div className="account-actions">
+                                <input
+                                    type="file"
+                                    accept=".csv"
+                                    onChange={(e) => setCsvFile(e.target.files[0])}
+                                />
+                                <button className="btn btn-primary" onClick={handleAnalyzeStore}>
+                                    Analyze Store
+                                </button>
                             </div>
+
+                            {loadingAI && <p>🤖 AI is analyzing your store...</p>}
+
+                            {/* Mode Badge */}
+                            {analysisMode && (
+                                <div className="account-card" style={{
+                                    background: analysisMode === 'predictive' ? '#1e3a5f' : '#1e4d3d',
+                                    marginTop: '1rem'
+                                }}>
+                                    <strong>
+                                        {analysisMode === 'predictive' ? '🔮 Predictive Mode' : '📊 Historical Mode'}
+                                    </strong>
+                                    <span style={{ marginLeft: '1rem', opacity: 0.8 }}>
+                                        {analysisMode === 'predictive'
+                                            ? '(Products CSV → Market Predictions)'
+                                            : '(Orders CSV → Sales Analysis)'}
+                                    </span>
+                                </div>
+                            )}
+
+                            {/* Analysis Summary Card */}
+                            {analysisSummary && (
+                                <div className="account-card" style={{ marginTop: '1rem' }}>
+                                    {analysisMode === 'predictive' ? (
+                                        <>
+                                            <strong>📦 Analysis Summary</strong>
+                                            <p>Products: {analysisSummary.products_analyzed} |
+                                                Avg Price: ${analysisSummary.avg_price} |
+                                                Tier: {analysisSummary.price_tier} |
+                                                Category: {analysisSummary.dominant_category}</p>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <strong>📈 Sales Summary</strong>
+                                            <p>Revenue: ${analysisSummary.total_revenue?.toLocaleString()} |
+                                                States: {analysisSummary.states_analyzed} |
+                                                Orders: {analysisSummary.orders_analyzed}</p>
+                                        </>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Top/Predicted States */}
+                            {topStates.length > 0 && (
+                                <div style={{ marginTop: '1rem' }}>
+                                    <h3>{analysisMode === 'predictive' ? '🎯 Predicted High-Potential States' : '🔥 Top Performing States'}</h3>
+                                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                        {topStates.map((state, idx) => (
+                                            <div key={state} className="account-card" style={{
+                                                display: 'inline-block',
+                                                padding: '0.5rem 1rem',
+                                                background: idx === 0 ? '#2563eb' : idx < 3 ? '#1e40af' : '#1e3a8a'
+                                            }}>
+                                                <span style={{ marginRight: '0.5rem' }}>
+                                                    {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '•'}
+                                                </span>
+                                                {state}
+                                                {analysisMode === 'predictive' && stateScores[state] && (
+                                                    <span style={{ marginLeft: '0.5rem', opacity: 0.7 }}>
+                                                        ({stateScores[state]} pts)
+                                                    </span>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Sales Chart (Historical Mode Only) */}
+                            {analysisMode === 'historical' && salesData.length > 0 && (
+                                <div style={{ width: "100%", height: 300, marginTop: '1.5rem' }}>
+                                    <h3>📊 Revenue by State</h3>
+                                    <ResponsiveContainer>
+                                        <BarChart data={salesData}>
+                                            <XAxis dataKey="state" />
+                                            <YAxis />
+                                            <Tooltip formatter={(value) => `$${value.toLocaleString()}`} />
+                                            <Bar dataKey="revenue" fill="#3b82f6" />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            )}
+
+                            {/* AI Suggestions */}
+                            {aiSuggestions.length > 0 && (
+                                <div style={{ marginTop: '1.5rem' }}>
+                                    <h3>🤖 AI Campaign Suggestions</h3>
+                                    {aiSuggestions.map((text, i) => (
+                                        <div key={i} className="account-card" style={{ marginBottom: '0.5rem' }}>
+                                            {text}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </section>
                     )}
+
 
                     {/* Chatbot Section */}
                     <aside className="chatbot-widget">

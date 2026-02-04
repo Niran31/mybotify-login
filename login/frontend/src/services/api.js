@@ -1,8 +1,10 @@
+
 // API Service Layer for MyBotify
 const API_BASE = '/api';
 
 // Helper to get auth token from localStorage
 const getToken = () => localStorage.getItem('token');
+
 
 // Helper for API requests
 async function apiRequest(endpoint, options = {}) {
