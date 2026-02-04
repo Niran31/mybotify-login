@@ -5,7 +5,7 @@ Flask application with PostgreSQL database, JWT auth, and email verification
 from dotenv import load_dotenv
 load_dotenv()
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -30,13 +30,14 @@ configuration.api_key['api-key'] = BREVO_API_KEY
 
 import secrets
 from functools import wraps
-from flask import Flask
 import random
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 
+# React build folder path
+REACT_BUILD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'frontend', 'dist')
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder=REACT_BUILD_DIR, static_url_path='')
 CORS(app)
 
 # Configuration
@@ -88,13 +89,20 @@ def send_otp_email(email, otp):
         return False
 
 
-# API-only mode - React handles the frontend
-# Remove all template routes since we're using React now
+# Serve React App - Flask serves the React build for production
+@app.route('/')
+def serve_react():
+    """Serve React app"""
+    return send_from_directory(app.static_folder, 'index.html')
 
-@app.route("/")
-def api_health():
-    """Health check endpoint"""
-    return jsonify({'message': 'MyBotify API is running', 'version': '1.0'}), 200
+@app.route('/<path:path>')
+def serve_static(path):
+    """Serve static files or fallback to React for client-side routing"""
+    if path.startswith('api/'):
+        return jsonify({'error': 'Not found'}), 404
+    if os.path.exists(os.path.join(app.static_folder, path)):
+        return send_from_directory(app.static_folder, path)
+    return send_from_directory(app.static_folder, 'index.html')
 
 
 def get_db_connection():
