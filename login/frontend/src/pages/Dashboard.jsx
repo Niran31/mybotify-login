@@ -61,7 +61,7 @@ export default function Dashboard() {
 
         try {
             // Upload CSV
-            const uploadRes = await fetch("http://localhost:5000/ai/upload-csv", {
+            const uploadRes = await fetch("/ai/upload-csv", {
                 method: "POST",
                 body: formData
             });
@@ -75,7 +75,7 @@ export default function Dashboard() {
             }
 
             // Analyze CSV (auto-detects Products vs Orders)
-            const analyzeRes = await fetch("http://localhost:5000/ai/analyze", {
+            const analyzeRes = await fetch("/ai/analyze", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ filename: uploadData.filename })
