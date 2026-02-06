@@ -548,11 +548,20 @@ def upload_csv():
 
 @app.route("/ai/chat", methods=["POST"])
 def marketing_chat():
+    # Parse request data first (outside try block so it's available in except)
+    data = request.json or {}
+    user_message = data.get("message", "")
+    context = data.get("context", {})
+    
+    print(f"🤖 AI Chat Request - Message: {user_message[:50]}...")
+    
     try:
-        data = request.json
-        user_message = data.get("message", "")
-        context = data.get("context", {})
-
+        # Check if API key is configured
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            print("❌ GEMINI_API_KEY is not set!")
+            raise Exception("GEMINI_API_KEY not configured")
+        
         prompt = f"""
 You are MyBotify AI Marketing Strategist.
 
@@ -570,13 +579,18 @@ Give marketing advice in clear business language.
 Be concise but useful. Keep response under 100 words.
 """
 
+        print("🔄 Calling Gemini API...")
         response = model.generate_content(prompt)
+        print("✅ Gemini API response received")
 
         return jsonify({
             "reply": response.text
         })
     except Exception as e:
-        print(f"Gemini AI Error: {e}")
+        print(f"❌ Gemini AI Error: {e}")
+        import traceback
+        traceback.print_exc()
+        
         # Fallback to rule-based responses
         message = user_message.lower() if user_message else ""
         top_states = context.get("topStates", [])
