@@ -10,4 +10,4 @@ sib-api-v3-sdk
 Werkzeug
 pandas
 python-multipart
-pandas
+google-generativeai

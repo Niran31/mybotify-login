@@ -13,6 +13,10 @@ import jwt
 import os
 import pandas as pd
 
+import google.generativeai as genai
+from dotenv import load_dotenv
+import os
+
 
 # Brevo (Sendinblue) Email API
 import sib_api_v3_sdk
@@ -35,6 +39,13 @@ from functools import wraps
 import random
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
+
+load_dotenv()
+
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+model = genai.GenerativeModel("gemini-1.5-flash")
+
 
 # React build folder path
 REACT_BUILD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'frontend', 'dist')
@@ -533,6 +544,62 @@ def upload_csv():
 # 1. Products CSV → Predictive Location Suggestions
 # 2. Orders CSV → Historical Sales Analysis
 # ============================================================
+
+
+@app.route("/ai/chat", methods=["POST"])
+def marketing_chat():
+    try:
+        data = request.json
+        user_message = data.get("message", "")
+        context = data.get("context", {})
+
+        prompt = f"""
+You are MyBotify AI Marketing Strategist.
+
+Store Analysis Context:
+Mode: {context.get("mode")}
+Top States: {context.get("topStates")}
+Sales Data: {context.get("salesData")}
+AI Suggestions: {context.get("aiSuggestions")}
+Summary: {context.get("summary")}
+
+User Question:
+{user_message}
+
+Give marketing advice in clear business language.
+Be concise but useful. Keep response under 100 words.
+"""
+
+        response = model.generate_content(prompt)
+
+        return jsonify({
+            "reply": response.text
+        })
+    except Exception as e:
+        print(f"Gemini AI Error: {e}")
+        # Fallback to rule-based responses
+        message = user_message.lower() if user_message else ""
+        top_states = context.get("topStates", [])
+        
+        if "where" in message:
+            if top_states:
+                reply = f"Based on your data, prioritize campaigns in {', '.join(top_states[:3])}."
+            else:
+                reply = "Upload your store data first so I can analyze target regions."
+        elif "budget" in message:
+            if top_states:
+                reply = f"Allocate most budget to {top_states[0]} and test smaller campaigns in other states."
+            else:
+                reply = "Upload data first to calculate budget strategy."
+        elif "why" in message:
+            reply = "These states were recommended based on product-market fit and sales trends."
+        elif "product" in message:
+            reply = "Focus on promoting your dominant product category in high-performing states."
+        else:
+            reply = "I can help with campaign targeting, budget planning, and product promotion. Try asking about these topics!"
+        
+        return jsonify({"reply": reply})
+
 
 
 def detect_csv_type(columns):

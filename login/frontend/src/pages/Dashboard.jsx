@@ -30,6 +30,11 @@ export default function Dashboard() {
     const [aiSuggestions, setAiSuggestions] = useState([]);  // AI campaign suggestions
     const [analysisSummary, setAnalysisSummary] = useState(null); // Summary stats
 
+    const [chatMessages, setChatMessages] = useState([
+        { role: "bot", text: "Hi! I am your MyBotify Marketing AI. Ask me about campaigns, targeting, or strategy." }
+    ]);
+
+    const [chatInput, setChatInput] = useState("");
 
 
     const handleLogout = () => {
@@ -128,6 +133,49 @@ export default function Dashboard() {
 
         setLoadingAI(false);
     };
+
+
+    const sendChatMessage = async () => {
+    if (!chatInput.trim()) return;
+
+    const userMessage = { role: "user", text: chatInput };
+
+    setChatMessages(prev => [...prev, userMessage]);
+
+    try {
+        const res = await fetch("/ai/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                message: chatInput,
+                context: {
+                    mode: analysisMode,
+                    topStates,
+                    stateScores,
+                    salesData,
+                    aiSuggestions,
+                    summary: analysisSummary
+                }
+            })
+        });
+
+        const data = await res.json();
+
+        setChatMessages(prev => [
+            ...prev,
+            { role: "bot", text: data.reply }
+        ]);
+
+    } catch (err) {
+        setChatMessages(prev => [
+            ...prev,
+            { role: "bot", text: "Sorry, AI assistant is unavailable." }
+        ]);
+    }
+
+    setChatInput("");
+};
+
 
 
     return (
@@ -431,33 +479,33 @@ export default function Dashboard() {
 
 
                     {/* Chatbot Section */}
-                    <aside className="chatbot-widget">
-                        <div className="chatbot-header">
-                            <div className="bot-avatar">
-                                <div className="bot-mini">
-                                    <div className="bot-head-mini">
-                                        <div className="bot-eye-mini left"></div>
-                                        <div className="bot-eye-mini right"></div>
-                                    </div>
-                                </div>
+                    <div className="chat-messages">
+                        {chatMessages.map((msg, index) => (
+                            <div
+                                key={index}
+                                className={`chat-message ${
+                                    msg.role === "user" ? "user-message" : "bot-message"
+                                }`}
+                            >
+                                <p>{msg.text}</p>
                             </div>
-                            <div className="chatbot-title">
-                                <p className="greeting">Hello</p>
-                                <p className="subtitle">Let's Chat with me !</p>
-                            </div>
-                        </div>
-                        <div className="chatbot-body">
-                            <div className="chat-messages" id="chatMessages">
-                                <div className="chat-message bot-message">
-                                    <p>Hi! How can I help you optimize your marketing campaigns today?</p>
-                                </div>
-                            </div>
-                            <div className="chat-input-area">
-                                <input type="text" placeholder="Feel free to ask me..." id="chatInput" />
-                                <button className="chat-send-btn" id="sendChatBtn">Start</button>
-                            </div>
-                        </div>
-                    </aside>
+                        ))}
+                    </div>
+
+                    <div className="chat-input-area">
+                        <input
+                            type="text"
+                            value={chatInput}
+                            onChange={(e) => setChatInput(e.target.value)}
+                            placeholder="Ask marketing strategy..."
+                        />
+                        <button
+                            className="chat-send-btn"
+                            onClick={sendChatMessage}
+                        >
+                            Send
+                        </button>
+                    </div>
                 </main>
             </div>
         </div>
