@@ -44,7 +44,7 @@ load_dotenv()
 
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-model = genai.GenerativeModel("gemini-1.5-flash")
+model = genai.GenerativeModel("gemini-2.0-flash")
 
 
 # React build folder path
@@ -564,7 +564,7 @@ def marketing_chat():
         
         # Re-configure Gemini with current API key (in case startup config failed)
         genai.configure(api_key=api_key)
-        ai_model = genai.GenerativeModel("gemini-1.5-flash")
+        ai_model = genai.GenerativeModel("gemini-2.0-flash")
         
         prompt = f"""
 You are MyBotify AI Marketing Strategist.
