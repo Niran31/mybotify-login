@@ -562,6 +562,10 @@ def marketing_chat():
             print("❌ GEMINI_API_KEY is not set!")
             raise Exception("GEMINI_API_KEY not configured")
         
+        # Re-configure Gemini with current API key (in case startup config failed)
+        genai.configure(api_key=api_key)
+        ai_model = genai.GenerativeModel("gemini-1.5-flash")
+        
         prompt = f"""
 You are MyBotify AI Marketing Strategist.
 
@@ -580,7 +584,7 @@ Be concise but useful. Keep response under 100 words.
 """
 
         print("🔄 Calling Gemini API...")
-        response = model.generate_content(prompt)
+        response = ai_model.generate_content(prompt)
         print("✅ Gemini API response received")
 
         return jsonify({

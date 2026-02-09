@@ -11,7 +11,7 @@ import {
     ResponsiveContainer
 } from 'recharts';
 
-
+const BACKEND_URL = "https://mybotify-login.onrender.com";
 
 export default function Dashboard() {
     const { user, logout } = useAuth();
@@ -143,7 +143,7 @@ export default function Dashboard() {
     setChatMessages(prev => [...prev, userMessage]);
 
     try {
-        const res = await fetch("/ai/chat", {
+        const res = await fetch(`${BACKEND_URL}/ai/chat`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -163,7 +163,7 @@ export default function Dashboard() {
 
         setChatMessages(prev => [
             ...prev,
-            { role: "bot", text: data.reply }
+            { role: "bot", text: data.reply || "No response from AI" }
         ]);
 
     } catch (err) {
