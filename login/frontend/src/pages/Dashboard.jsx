@@ -66,7 +66,7 @@ export default function Dashboard() {
 
         try {
             // Upload CSV
-            const uploadRes = await fetch("/ai/upload-csv", {
+            const uploadRes = await fetch(`${BACKEND_URL}/ai/upload-csv`, {
                 method: "POST",
                 body: formData
             });
@@ -80,7 +80,7 @@ export default function Dashboard() {
             }
 
             // Analyze CSV (auto-detects Products vs Orders)
-            const analyzeRes = await fetch("/ai/analyze", {
+            const analyzeRes = await fetch(`${BACKEND_URL}/ai/analyze`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ filename: uploadData.filename })
@@ -136,45 +136,45 @@ export default function Dashboard() {
 
 
     const sendChatMessage = async () => {
-    if (!chatInput.trim()) return;
+        if (!chatInput.trim()) return;
 
-    const userMessage = { role: "user", text: chatInput };
+        const userMessage = { role: "user", text: chatInput };
 
-    setChatMessages(prev => [...prev, userMessage]);
+        setChatMessages(prev => [...prev, userMessage]);
 
-    try {
-        const res = await fetch(`${BACKEND_URL}/ai/chat`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                message: chatInput,
-                context: {
-                    mode: analysisMode,
-                    topStates,
-                    stateScores,
-                    salesData,
-                    aiSuggestions,
-                    summary: analysisSummary
-                }
-            })
-        });
+        try {
+            const res = await fetch(`${BACKEND_URL}/api/chat`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    message: chatInput,
+                    context: {
+                        mode: analysisMode,
+                        topStates,
+                        stateScores,
+                        salesData,
+                        aiSuggestions,
+                        summary: analysisSummary
+                    }
+                })
+            });
 
-        const data = await res.json();
+            const data = await res.json();
 
-        setChatMessages(prev => [
-            ...prev,
-            { role: "bot", text: data.reply || "No response from AI" }
-        ]);
+            setChatMessages(prev => [
+                ...prev,
+                { role: "bot", text: data.reply || "No response from AI" }
+            ]);
 
-    } catch (err) {
-        setChatMessages(prev => [
-            ...prev,
-            { role: "bot", text: "Sorry, AI assistant is unavailable." }
-        ]);
-    }
+        } catch (err) {
+            setChatMessages(prev => [
+                ...prev,
+                { role: "bot", text: "Sorry, AI assistant is unavailable." }
+            ]);
+        }
 
-    setChatInput("");
-};
+        setChatInput("");
+    };
 
 
 
@@ -483,9 +483,8 @@ export default function Dashboard() {
                         {chatMessages.map((msg, index) => (
                             <div
                                 key={index}
-                                className={`chat-message ${
-                                    msg.role === "user" ? "user-message" : "bot-message"
-                                }`}
+                                className={`chat-message ${msg.role === "user" ? "user-message" : "bot-message"
+                                    }`}
                             >
                                 <p>{msg.text}</p>
                             </div>

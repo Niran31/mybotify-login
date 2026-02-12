@@ -50,7 +50,7 @@ model = genai.GenerativeModel("gemini-2.0-flash")
 # React build folder path
 REACT_BUILD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'frontend', 'dist')
 
-app = Flask(__name__, static_folder=REACT_BUILD_DIR, static_url_path='')
+app = Flask(__name__, static_folder="dist", static_url_path='')
 CORS(app)
 
 # Configuration
@@ -546,7 +546,7 @@ def upload_csv():
 # ============================================================
 
 
-@app.route("/ai/chat", methods=["POST"])
+@app.route("/api/chat", methods=["POST"])
 def marketing_chat():
     # Parse request data first (outside try block so it's available in except)
     data = request.json or {}
