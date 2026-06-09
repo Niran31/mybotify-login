@@ -182,6 +182,12 @@ def init_database():
             conn.close()
         return False
 
+# Initialize database tables on application start
+try:
+    init_database()
+except Exception as db_err:
+    print(f"⚠️ Could not initialize database on startup: {db_err}")
+
 # Token required decorator
 def token_required(f):
     @wraps(f)
