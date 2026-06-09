@@ -50,7 +50,7 @@ model = genai.GenerativeModel("gemini-2.0-flash")
 # React build folder path
 REACT_BUILD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'frontend', 'dist')
 
-app = Flask(__name__, static_folder="dist", static_url_path='')
+app = Flask(__name__, static_folder=REACT_BUILD_DIR, static_url_path='')
 CORS(app)
 
 # Configuration
