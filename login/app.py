@@ -50,7 +50,7 @@ model = genai.GenerativeModel("gemini-2.0-flash")
 # React build folder path
 REACT_BUILD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'frontend', 'dist')
 
-app = Flask(__name__, static_folder=REACT_BUILD_DIR, static_url_path='')
+app = Flask(__name__, static_folder=None)
 CORS(app)
 
 # Configuration
@@ -103,20 +103,21 @@ def send_otp_email(email, otp):
 
 
 
-# Serve React App - Flask serves the React build for production
-@app.route('/')
-def serve_react():
-    """Serve React app"""
-    return send_from_directory(app.static_folder, 'index.html')
-
+# Serve React App - Flask serves the React build for production and handles SPA routing
+@app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
-def serve_static(path):
-    """Serve static files or fallback to React for client-side routing"""
-    if path.startswith('api/'):
+def serve_react(path):
+    """Serve React app and static assets, supporting client-side routing"""
+    if path.startswith('api/') or path.startswith('ai/'):
         return jsonify({'error': 'Not found'}), 404
-    if os.path.exists(os.path.join(app.static_folder, path)):
-        return send_from_directory(app.static_folder, path)
-    return send_from_directory(app.static_folder, 'index.html')
+        
+    # Check if the requested path is a file in the React build directory
+    file_path = os.path.join(REACT_BUILD_DIR, path)
+    if path and os.path.exists(file_path) and os.path.isfile(file_path):
+        return send_from_directory(REACT_BUILD_DIR, path)
+        
+    # Fallback to index.html for client-side routing (React Router)
+    return send_from_directory(REACT_BUILD_DIR, 'index.html')
 
 
 def get_db_connection():
